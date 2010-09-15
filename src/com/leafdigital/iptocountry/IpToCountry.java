@@ -37,6 +37,16 @@ import java.util.zip.GZIPInputStream;
  * important because the list maintainers restrict the number of requests
  * permitted.
  * <p>
+ * Currently the database has about 100,000 entries. The in-memory
+ * representation in this class uses three arrays to store two longs and
+ * a pointer to a (reused) string for each entry, so typical memory consumption
+ * is about 2MB. It would be possible to nearly halve this by using ints
+ * instead of longs to store the numbers, but I haven't bothered as 2MB seems
+ * a reasonable overhead for most servers.
+ * <p>
+ * For obvious reasons, the memory requirement temporarily doubles while
+ * loading a new database version.
+ * <p>
  * At present, this class only supports the IP4 database.
  */
 public class IpToCountry
