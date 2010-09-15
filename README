@@ -1,0 +1,59 @@
+leafdigital IpToCountry
+-----------------------
+
+Copyright 2010 Samuel Marshall
+
+Released under GNU Public License v3 (see LICENSE)
+
+This utility class obtains the country code from an IP4 address. It is based on
+the database maintained at: http://software77.net/geo-ip/
+
+The class automatically downloads and updates the database for you. It contains
+features to ensure that you don't accidentally break the download limits
+that are in place at that site. 
+
+See javadoc for class com.leafdigital.iptocountry.IpToCountry for more
+information.
+
+
+Using binaries
+--------------
+
+If you just want to use this class, grab the binary jar files. 
+
+There are two files: iptocountry.[version].jar and 
+iptocountry.[version].javadoc.jar.
+
+* You only need the main jar file (add it to your application) to use this
+  utility.
+  
+* The second jar file contains the javadoc documentation. If you add this
+  in the 'attached javadoc' field for the library in an IDE such as Eclipse,
+  your IDE will be able to automatically show the documentation for this class.
+
+
+Build instructions
+------------------
+
+If you want to build this project, download the source using Git or the
+GitHub download option.
+
+Once you have downloaded the source, just change to the directory with this
+file in and run 'ant'. The default build.xml file will build the project.
+
+Examine build.xml if you want to change where it puts temporary data or the
+resulting output files.
+
+
+Repository information
+----------------------
+
+In case you're not reading it there, the hosting site for this project is:
+
+http://github.com/quen/iptocountry
+
+There you can do the following:
+
+* Download the full source code (click the Download Source button or use Git).
+* Download the latest binary version (click the Downloads tab).
+* Report bugs or contribute improvements (click the Issues tab).
