@@ -6,7 +6,8 @@ Copyright 2010 Samuel Marshall
 Released under GNU Public License v3 (see LICENSE)
 
 This utility class obtains the country code from an IP4 address. It is based on
-the database maintained at: http://software77.net/geo-ip/
+the database maintained at http://software77.net/geo-ip/ - note that they
+request that, if you use it, you link back to them.
 
 The class automatically downloads and updates the database for you. It contains
 features to ensure that you don't accidentally break the download limits
