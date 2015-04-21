@@ -78,7 +78,7 @@ public class IpToCountry
 	private final static long ATTEMPT_LIMIT = 60 * 1000L;
 	private final static String FILE_NAME = "IpToCountry.csv";
 	private final static Pattern CSV_LINE = Pattern.compile(
-		"^\"([0-9]{1,10})\",\"([0-9]{1,10})\",\"[^\"]*\",\"[0-9]*\",\"([A-Z]+)\"");
+		"^\"([0-9]{1,10})\",\"([0-9]{1,10})\",\"[^\"]*\",\"[0-9]*\",\"([A-Z]+)\",\"([A-Z]+)\",\"([\\s\\w\\p{Punct}]+)\"");
 	private final static int COPY_BUFFER = 65536;
 	private final static int INITIAL_ENTRIES = 65536;
 
@@ -93,8 +93,8 @@ public class IpToCountry
 	private Informer informer;
 
 	long[] entryFrom, entryTo;
-	String[] entryCode;
-	Throwable lastError;
+	String[] entryCode, entryAbbr, entryName;
+ 	Throwable lastError;
 
 	/**
 	 * Interface for use to receive information about IpToCountry processing,
@@ -463,6 +463,92 @@ public class IpToCountry
 	}
 
 	/**
+	 * Gets the country name for an IP address.
+	 * <p>
+	 * Based on the list documentation, this is country name of the
+	 * organization to which the allocation or assignment was made, with the
+	 * following differences or unusual cases:
+	 * @param address Internet address
+	 * @return Country name
+	 * @throws IllegalArgumentException If the address is an IPv6 address that
+	 *   can't be expressed in 4 bytes, or something else
+	 */
+	public String getCountryName(InetAddress address)
+		throws IllegalArgumentException
+	{
+		long addressLong = getAddressAsLong(get4ByteAddress(address));
+		synchronized(this)
+		{
+			long now = getCurrentTime();
+			if(now > fileLastModified + expireTime)
+			{
+				startDownload();
+			}
+			return getCountryName(addressLong, entryFrom, entryTo, entryName);
+		}
+	}
+	
+	/**
+	 * Get a country name given the arrays which hold the details. (This is
+	 * a static method to make unit testing easier.)
+	 * <p>
+	 * This is a separate method with default access so it can be used in unit
+	 * testing.
+	 * @param addressLong Address as long
+	 * @param entryFrom Array of 'from' values for each entry
+	 * @param entryTo Array of 'to' values for each entry
+	 * @param entryName Array of country names for each entry'
+	 * @return Corresponding country name, or .. if not known
+	 */
+	static String getCountryName(long addressLong,
+		long[] entryFrom, long[] entryTo, String[] entryName)
+	{
+		// Binary search for the highest entryFrom that's less than or equal to
+		// the specified address.
+		int min = 0, max = entryFrom.length == 0 ? 0 : entryFrom.length - 1;
+		while(min != max)
+		{
+			int half = (min + max) / 2;
+			if(half == min)
+			{
+				// This special case handles the situation where e.g. min=10, max=11;
+				// there half=10 and we could get an endless loop.
+				if(entryFrom[max] <= addressLong)
+				{
+					min = max;
+				}
+				else
+				{
+					max = min;
+				}
+			}
+			else
+			{
+				// Standard case; check whether the halfway position is bigger or
+				// smaller
+				if(entryFrom[half] <= addressLong)
+				{
+					min = half;
+				}
+				else
+				{
+					max = half - 1;
+				}
+			}
+		}
+
+		if(min >= entryFrom.length || entryTo[min] < addressLong
+			|| entryFrom[min] > addressLong)
+		{
+			return null;
+		}
+		else
+		{
+			return entryName[min];
+		}
+	}
+
+	/**
 	 * Given an internet address in network byte order, converts it into an
 	 * unsigned long.
 	 * <p>
@@ -600,6 +686,8 @@ public class IpToCountry
 			long[] newEntryFrom = new long[INITIAL_ENTRIES];
 			long[] newEntryTo = new long[INITIAL_ENTRIES];
 			String[] newEntryCode = new String[INITIAL_ENTRIES];
+			String[] newEntryAbbr = new String[INITIAL_ENTRIES];
+			String[] newEntryName = new String[INITIAL_ENTRIES];
 			int entries = 0;
 
 			reader = new BufferedReader(
@@ -641,13 +729,24 @@ public class IpToCountry
 					temp = new long[entries * 2];
 					System.arraycopy(newEntryTo, 0, temp, 0, entries);
 					newEntryTo = temp;
+
 					String[] tempStr = new String[entries * 2];
 					System.arraycopy(newEntryCode, 0, tempStr, 0, entries);
 					newEntryCode = tempStr;
+
+					tempStr = new String[entries * 2];
+					System.arraycopy(newEntryAbbr, 0, tempStr, 0, entries);
+					newEntryAbbr = tempStr;
+
+					tempStr = new String[entries * 2];
+					System.arraycopy(newEntryName, 0, tempStr, 0, entries);
+					newEntryName = tempStr;
 				}
 
 				// Share country strings, as they are likely to be repeated many times
 				String code = m.group(3);
+				String countryAbbreviation = m.group(4);
+				String countryName = m.group(5);
 				if(countryCodes.containsKey(code))
 				{
 					code = countryCodes.get(code);
@@ -661,6 +760,8 @@ public class IpToCountry
 				newEntryFrom[entries] = Long.parseLong(m.group(1));
 				newEntryTo[entries] = Long.parseLong(m.group(2));
 				newEntryCode[entries] = code;
+				newEntryAbbr[entries] = countryAbbreviation;
+				newEntryName[entries] = countryName;
 				entries++;
 			}
 
@@ -671,16 +772,27 @@ public class IpToCountry
 			temp = new long[entries];
 			System.arraycopy(newEntryTo, 0, temp, 0, entries);
 			newEntryTo = temp;
+			
 			String[] tempStr = new String[entries];
 			System.arraycopy(newEntryCode, 0, tempStr, 0, entries);
 			newEntryCode = tempStr;
 
+			tempStr = new String[entries];
+			System.arraycopy(newEntryAbbr, 0, tempStr, 0, entries);
+			newEntryAbbr = tempStr;
+
+			tempStr = new String[entries];
+			System.arraycopy(newEntryName, 0, tempStr, 0, entries);
+			newEntryName = tempStr;
+			
 			// Switch arrays with 'real' ones
 			synchronized(this)
 			{
 				entryFrom = newEntryFrom;
 				entryTo = newEntryTo;
 				entryCode = newEntryCode;
+				entryAbbr = newEntryAbbr;
+				entryName = newEntryName;
 				fileLastModified = newFileLastModified;
 			}
 

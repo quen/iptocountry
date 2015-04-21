@@ -28,6 +28,8 @@ import java.util.zip.GZIPOutputStream;
 
 import org.junit.*;
 
+import com.leafdigital.iptocountry.IpToCountry;
+
 /**
  * Test cases for {@link IpToCountry}.
  */
@@ -316,8 +318,13 @@ public class TestIpToCountry
 		informerResults = "";
 		assertEquals("GB",
 			ip.getCountryCode(InetAddress.getByName("212.58.246.92")));
+		assertEquals("Great Britain",
+				ip.getCountryName(InetAddress.getByName("212.58.246.92")));
+		
 		assertEquals("DE",
 			ip.getCountryCode(InetAddress.getByName("195.71.11.67")));
+		assertEquals("Germany",
+				ip.getCountryName(InetAddress.getByName("195.71.11.67")));
 
 		// Init from existing file
 		ip = new IpToCountryLocal(folder, testInformer);
@@ -325,6 +332,8 @@ public class TestIpToCountry
 		informerResults = "";
 		assertEquals("GB",
 			ip.getCountryCode(InetAddress.getByName("212.58.246.92")));
+		assertEquals("Great Britain",
+				ip.getCountryName(InetAddress.getByName("212.58.246.92")));
 
 		// Init from existing file that's out of date
 		long now = System.currentTimeMillis();
@@ -337,6 +346,8 @@ public class TestIpToCountry
 			informerResults = "";
 			assertEquals("GB",
 				ip.getCountryCode(InetAddress.getByName("212.58.246.92")));
+			assertEquals("Great Britain",
+					ip.getCountryName(InetAddress.getByName("212.58.246.92")));
 
 			// But download should happen
 			ip.wait(20000);
@@ -355,6 +366,8 @@ public class TestIpToCountry
 			// This one should return immediately
 			assertEquals("GB",
 				ip.getCountryCode(InetAddress.getByName("212.58.246.92")));
+			assertEquals("Great Britain",
+					ip.getCountryName(InetAddress.getByName("212.58.246.92")));
 			assertEquals("", informerResults);
 
 			// But then it should do a download
@@ -365,6 +378,8 @@ public class TestIpToCountry
 			// And after that it should still work
 			assertEquals("GB",
 				ip.getCountryCode(InetAddress.getByName("212.58.246.92")));
+			assertEquals("Great Britain",
+					ip.getCountryName(InetAddress.getByName("212.58.246.92")));
 		}
 	}
 
